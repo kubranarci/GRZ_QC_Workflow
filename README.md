@@ -19,7 +19,7 @@
 
 ## Introduction
 
-**nf-core/grzqc** is a bioinformatics pipeline that ...
+**nf-core/grzqc** is a bioinformatics pipeline that creates a detailed quality control report for short-read sequencing data as part of the Modellvorhaben GenomSeq.
 
 <!-- TODO nf-core:
    Complete this sentence with a 2-3 sentence summary of what types of data the pipeline ingests, a brief overview of the
@@ -34,16 +34,39 @@
 1. Read QC ([`FastQC`](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/))
 2. Present QC for raw reads ([`MultiQC`](http://multiqc.info/))
 
+## Setup
+
+First, download the following necessary files:
+- TODO
+
+Then configure `conf/grzqc.config` accordingly:
+```
+params {
+    config_profile_name        = 'Profile for GRZ QC'
+    config_profile_description = 'Config defining pre built reference files for GRZ QC'
+    bwa_index_37               = "/PATH/TO/GRCh37/BWAIndex/"
+    fasta_37                   = "/PATH/TO/GRCh37/genome.fa"
+    bwa_index_38               = "/PATH/TO/GRCh38/BWAIndex/"
+    fasta_38                   = "/PATH/TO/GRCh38/genome.fa"
+
+}
+
+```
+
 ## Usage
 
 > [!NOTE]
 > If you are new to Nextflow and nf-core, please refer to [this page](https://nf-co.re/docs/usage/installation) on how to set-up Nextflow. Make sure to [test your setup](https://nf-co.re/docs/usage/introduction#how-to-run-a-pipeline) with `-profile test` before running the workflow on actual data.
 
-This pipeline needs a samplesheet which is generated automatically from the metadata.json file included in the submission base directory. Please make sure that the submission base directory has the required folder structure. The script run_grzqc.sh parses the metadata.json file to create a nextflow samplesheet and then uses this samplesheet to run the nextflow pipeline. 
+This pipeline takes a submission directory as input.
+Please make sure that the submission base directory has the required folder structure.
+
+The script run_grzqc.sh parses the `metadata.json` file to create a nextflow samplesheet and then uses this samplesheet to run the nextflow pipeline.
 
 Now, you can run the pipeline using:
 
-```bash run_grzqc.sh <Submission_base_directory_path> <OUTDIR>
+```bash
+run_grzqc.sh <Submission_base_directory_path> <OUTDIR>
 ```
 
 > [!WARNING]
