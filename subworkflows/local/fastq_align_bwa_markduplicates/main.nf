@@ -4,9 +4,9 @@
 
 include { BWAMEM2_MEM              } from '../../../modules/nf-core/bwamem2/mem/main'
 include { BAM_INDEX_STATS_SAMTOOLS } from '../../local/bam_index_stats_samtools/main'
+include { FASTQ_SORT               } from '../../../modules/local/fastq_sort/main'
 include { SAMTOOLS_MERGE           } from '../../../modules/nf-core/samtools/merge/main'
 include { SAMBAMBA_MARKDUP         } from '../../../modules/nf-core/sambamba/markdup/main'
-include { CALCULATE_BASEQUALITY    } from '../../../modules/local/calculate_basequality/main'
 
 workflow FASTQ_ALIGN_BWA_MARKDUPLICATES {
     take:
@@ -20,9 +20,22 @@ workflow FASTQ_ALIGN_BWA_MARKDUPLICATES {
     main:
     ch_versions = Channel.empty()
 
+    ch_alignment_reads = ch_reads
+
+    if (params.sort_paired_fastq) {
+        // Sort paired-end FASTQ files (required for bwa-mem)
+        FASTQ_SORT(
+            ch_reads
+        )
+
+        ch_versions = ch_versions.mix(FASTQ_SORT.out.versions)
+
+        ch_alignment_reads = FASTQ_SORT.out.reads
+    }
+
     // Map reads with BWA - per lane
     BWAMEM2_MEM(
-        ch_reads,
+        ch_alignment_reads,
         ch_index,
         ch_fasta,
         val_sort_bam,
@@ -59,13 +72,11 @@ workflow FASTQ_ALIGN_BWA_MARKDUPLICATES {
         [newMeta + [id: newMeta.sample], bam]
     }
 
-    // run calculate_basequality.py on the alogned bam file (from samplesheet)
-    CALCULATE_BASEQUALITY(
-        ch_alignments_newMeta
-    )
-    ch_versions = ch_versions.mix(CALCULATE_BASEQUALITY.out.versions)
-
-    // Merge aligned bams with the alignments coming from samplesheet
+    ch_alignments_newMeta
+        .map { meta, _bam ->
+            tuple(meta, meta.fastp_json)
+        }
+        .set { jsonstats }
 
     // Sort, index BAM file and run samtools stats, flagstat and idxstats
     BAM_INDEX_STATS_SAMTOOLS(
@@ -74,18 +85,25 @@ workflow FASTQ_ALIGN_BWA_MARKDUPLICATES {
     )
 
     ch_versions = ch_versions.mix(BAM_INDEX_STATS_SAMTOOLS.out.versions)
+    ch_bam = BAM_INDEX_STATS_SAMTOOLS.out.bam
+    ch_bai = BAM_INDEX_STATS_SAMTOOLS.out.bai
 
-    // Mark duplicates with sambamba
-    SAMBAMBA_MARKDUP(
-        BAM_INDEX_STATS_SAMTOOLS.out.bam
-    )
-    ch_versions = ch_versions.mix(SAMBAMBA_MARKDUP.out.versions)
+    if (!params.skip_markdup) {
+        // Mark duplicates with sambamba
+        SAMBAMBA_MARKDUP(
+            BAM_INDEX_STATS_SAMTOOLS.out.bam
+        )
+        ch_versions = ch_versions.mix(SAMBAMBA_MARKDUP.out.versions)
+        ch_bam = SAMBAMBA_MARKDUP.out.bam
+        // channel: [ val(meta), path(bam) ]
+        ch_bai = SAMBAMBA_MARKDUP.out.bai
+    }
 
     emit:
-    bam       = SAMBAMBA_MARKDUP.out.bam // channel: [ val(meta), path(bam) ]
-    bai       = SAMBAMBA_MARKDUP.out.bai // channel: [ val(meta), path(bai) ]
+    bam       = ch_bam // channel: [ val(meta), path(bam) ]
+    bai       = ch_bai // channel: [ val(meta), path(bai) ]
     flagstat  = BAM_INDEX_STATS_SAMTOOLS.out.flagstat // channel: [ val(meta), path(flagstat) ]
     stat      = BAM_INDEX_STATS_SAMTOOLS.out.stats // channel: [ val(meta), path(stats) ]
-    jsonstats = CALCULATE_BASEQUALITY.out.json // channel: [ val(meta), path(json) ]
+    jsonstats // channel: [ val(meta), path(json) ]
     versions  = ch_versions // channel: [ path(versions.yml) ]
 }
