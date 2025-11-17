@@ -3,6 +3,11 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+- Bump grz-pydantic-models to 2.4.0 [#160](https://github.com/BfArM-MVH/GRZ_QC_Workflow/pull/160)
+  - uses new mean read length threshold
+
 ## v1.2.0 - [09.10.2025]
 
 - Ignore non-QCed library types in submission metadata (e.g. RNA) [#149](https://github.com/BfArM-MVH/GRZ_QC_Workflow/pull/149)
