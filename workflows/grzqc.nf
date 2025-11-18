@@ -13,12 +13,13 @@ include { FASTPLONG                      } from '../modules/local/fastplong'
 include { MULTIQC                        } from '../modules/nf-core/multiqc'
 include { CONVERT_BED_CHROM              } from '../modules/local/convert_bed_chrom'
 include { COMPARE_THRESHOLD              } from '../modules/local/compare_threshold'
-include { MERGE_REPORTS                  } from '../modules/local/merge_reports'
 include { MOSDEPTH                       } from '../modules/nf-core/mosdepth'
 include { FASTQ_ALIGN_BWA_MARKDUPLICATES } from '../subworkflows/local/fastq_align_bwa_markduplicates'
 include { SAMTOOLS_FASTQ                 } from '../modules/nf-core/samtools/fastq/main'
 include { ALIGN_MERGE_LONG               } from '../subworkflows/local/align_merge_long'
 include { PREPARE_REFERENCES             } from '../subworkflows/local/prepare_references'
+include { MERGE_REPORTS as MERGE_REPORTS_DEDUPLICATED   } from '../modules/local/merge_reports'
+include { MERGE_REPORTS as MERGE_REPORTS_UNDEDUPLICATED   } from '../modules/local/merge_reports'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -283,19 +284,30 @@ workflow GRZQC {
 
     // Compare coverage with thresholds: writing the results file
     // input: FASTP Q30 ratio + mosdepth all genes + mosdepth target genes
+
     COMPARE_THRESHOLD(
         ch_fastp_mosdepth_merged
     )
     ch_versions = ch_versions.mix(COMPARE_THRESHOLD.out.versions)
 
+    COMPARE_THRESHOLD.out.result_csv.branch { meta, _file ->
+        deduplicated: meta.is_deduplicated == true
+        undeduplicated: meta.is_deduplicated == false
+    }.set { ch_compare_threshold_results }
 
     // Merge compare_threshold results for a final report
-    MERGE_REPORTS(
-        COMPARE_THRESHOLD.out.result_csv.groupTuple()
+    MERGE_REPORTS_DEDUPLICATED(
+        ch_compare_threshold_results.deduplicated.collect { _meta, file -> file }
+    )
+    ch_multiqc_files = ch_multiqc_files.mix(MERGE_REPORTS_DEDUPLICATED.out.multiqc)
+    ch_versions = ch_versions.mix(MERGE_REPORTS_DEDUPLICATED.out.versions)
+
+    MERGE_REPORTS_UNDEDUPLICATED(
+        ch_compare_threshold_results.undeduplicated.collect { _meta, file -> file }
     )
 
-    ch_multiqc_files = ch_multiqc_files.mix(MERGE_REPORTS.out.multiqc)
-    ch_versions = ch_versions.mix(MERGE_REPORTS.out.versions)
+    ch_multiqc_files = ch_multiqc_files.mix(MERGE_REPORTS_UNDEDUPLICATED.out.multiqc)
+    ch_versions = ch_versions.mix(MERGE_REPORTS_UNDEDUPLICATED.out.versions)
 
     // Collate and save software versions
     softwareVersionsToYAML(ch_versions)
