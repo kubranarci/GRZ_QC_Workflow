@@ -266,10 +266,19 @@ workflow GRZQC {
         }
         .set { ch_fastp_mosdepth_aligned }
 
+    // duplicate fastp outputs for dedup and non-dedup comparison
+
+    ch_fastp_fordedup = ch_fastp_mosdepth.mix(ch_fastp_mosdepth_aligned)
+    ch_fastp_skipdedup = ch_fastp_mosdepth.mix(ch_fastp_mosdepth_aligned)
+
+    ch_fastp_fordedup.map { meta, json -> [meta + [is_deduplicated: true], json]}.set { ch_fastp_mosdepth_duplicated }
+
+    ch_fastp_skipdedup.map { meta, json -> [meta + [is_deduplicated: false], json]}.set { ch_fastp_mosdepth_nodedup }
+
     // Collect the results for comparison
     MOSDEPTH.out.summary_txt
         .join(MOSDEPTH.out.regions_bed, by: 0)
-        .join(ch_fastp_mosdepth.mix(ch_fastp_mosdepth_aligned).groupTuple(), by: 0)
+        .join(ch_fastp_mosdepth_duplicated.mix(ch_fastp_mosdepth_nodedup).groupTuple(), by: 0)
         .set { ch_fastp_mosdepth_merged }
 
     // Compare coverage with thresholds: writing the results file
@@ -282,7 +291,7 @@ workflow GRZQC {
 
     // Merge compare_threshold results for a final report
     MERGE_REPORTS(
-        COMPARE_THRESHOLD.out.result_csv.collect()
+        COMPARE_THRESHOLD.out.result_csv.groupTuple()
     )
 
     ch_multiqc_files = ch_multiqc_files.mix(MERGE_REPORTS.out.multiqc)

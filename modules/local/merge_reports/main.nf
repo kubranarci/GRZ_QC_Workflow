@@ -6,17 +6,19 @@ process MERGE_REPORTS {
         : 'community.wave.seqera.io/library/pip_gzip-utils_openpyxl_pandas:cd97ba68cc5b8463'}"
 
     input:
-    path csv_files
+    tuple val(meta), path (csv_files)
 
     output:
-    path "report.csv"
-    path "report.xlsx"
-    path "report_mqc.csv", emit: multiqc
-    path ('versions.yml'), emit: versions
+    path "*report.csv"
+    path "*report.xlsx"
+    path "*report_mqc.csv", emit: multiqc
+    path ('versions.yml') , emit: versions
 
     script:
+    def dedup = meta.is_deduplicated ? 'deduplicated' : 'undeduplicated'
+
     """
-    merge_reports.py ${csv_files} --output_prefix "report"
+    merge_reports.py ${csv_files} --output_prefix "${dedup}.report"
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
