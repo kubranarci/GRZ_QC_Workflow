@@ -16,7 +16,7 @@ process COMPARE_THRESHOLD {
     def arg_meanDepthOfCoverage = meta.meanDepthOfCoverage ? "--meanDepthOfCoverage ${meta.meanDepthOfCoverage}" : ''
     def arg_targetedRegionsAboveMinCoverage = meta.targetedRegionsAboveMinCoverage ? "--targetedRegionsAboveMinCoverage ${meta.targetedRegionsAboveMinCoverage}" : ''
     def arg_percentBasesAboveQualityThreshold = meta.percentBasesAboveQualityThreshold ? "--percentBasesAboveQualityThreshold ${meta.percentBasesAboveQualityThreshold}" : ''
-    def dedup = meta.is_deduplicated ? 'deduplicated' : 'undeduplicated'
+    def dedup = meta.is_deduplicated ? 'nonredundant' : 'redundant' // if using deduplicated data name output to redundant
 
     """
     compare_threshold.py \\
