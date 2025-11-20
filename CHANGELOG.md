@@ -7,9 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Bump grz-pydantic-models to 2.4.0 [#160](https://github.com/BfArM-MVH/GRZ_QC_Workflow/pull/160)
   - uses new mean read length threshold
+- Add instructions for bumping Docker/Singularity local module environments [#162](https://github.com/BfArM-MVH/GRZ_QC_Workflow/pull/162)
 - Enabling redundant(nondeduplicated) and nonredundant(deduplicated) coverage reporting [#163](https://github.com/BfArM-MVH/GRZ_QC_Workflow/pull/163)
+<<<<<<< HEAD
   - Mosdepth runs --fast-mode with nonredundant reads
 
+=======
+  - Mosdepth runs --fast-mode with  nonredundant reads
+  - 
+>>>>>>> add965c1db4537ec7311f3548abf7756d523dca5
 ## v1.2.0 - [09.10.2025]
 
 - Ignore non-QCed library types in submission metadata (e.g. RNA) [#149](https://github.com/BfArM-MVH/GRZ_QC_Workflow/pull/149)
