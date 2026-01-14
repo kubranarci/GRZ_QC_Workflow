@@ -140,7 +140,7 @@ workflow GRZQC {
     save_trimmed_fail = false
     save_merged = false
     FASTP(
-        samplesheet_ch_reads.srt.map { meta, reads -> meta, reads, [] },
+        samplesheet_ch_reads.srt.map{ meta, reads -> meta, reads, [] },
         false,
         save_trimmed_fail,
         save_merged,
